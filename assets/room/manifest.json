@@ -1,0 +1,96 @@
+{
+  "meshes": [
+    {
+      "first": 0,
+      "count": 31401,
+      "material": 0
+    },
+    {
+      "first": 31401,
+      "count": 9318,
+      "material": 1
+    },
+    {
+      "first": 40719,
+      "count": 57756,
+      "material": 2
+    },
+    {
+      "first": 98475,
+      "count": 42510,
+      "material": 3
+    },
+    {
+      "first": 140985,
+      "count": 228525,
+      "material": 4
+    },
+    {
+      "first": 369510,
+      "count": 126219,
+      "material": 4
+    }
+  ],
+  "materials": [
+    {
+      "texture": "texture-0.jpg",
+      "double_sided": false
+    },
+    {
+      "texture": "texture-1.jpg",
+      "double_sided": false
+    },
+    {
+      "texture": "texture-2.jpg",
+      "double_sided": true
+    },
+    {
+      "texture": "texture-3.jpg",
+      "double_sided": false
+    },
+    {
+      "texture": "texture-4.jpg",
+      "double_sided": false
+    }
+  ],
+  "placement": {
+    "gltf_to_native": [
+      [
+        0.0,
+        0.0,
+        -1.0,
+        2.129429
+      ],
+      [
+        -1.0,
+        0.0,
+        0.0,
+        -2.95
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        -0.8343457
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "deck_origin_native": [
+      0,
+      0,
+      0
+    ],
+    "tabletop_native_z": -0.08,
+    "table_anchor_gltf": [
+      -2.95,
+      0.7543457,
+      2.129429
+    ],
+    "room_scale": 1.0
+  }
+}

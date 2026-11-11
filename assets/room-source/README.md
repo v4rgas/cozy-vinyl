@@ -5,4 +5,4 @@ Source: https://sketchfab.com/3d-models/appartement-6a7a5fe208344b2e8123a88923db
 License: Creative Commons Attribution 4.0 International
 https://creativecommons.org/licenses/by/4.0/
 
-Original GLB downloaded by the project owner. Included unchanged; native room integration is pending.
+Original GLB downloaded by the project owner. Included unchanged as the source for the native room. Prepared geometry, textures and lighting live in ../room/.

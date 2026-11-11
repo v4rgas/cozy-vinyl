@@ -12,3 +12,6 @@ assets/.building
 /.agents/
 /.codex/
 /.aws/
+
+__pycache__/
+*.pyc

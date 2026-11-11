@@ -1,27 +1,23 @@
-# Photorealistic rendering approach
+# Room rendering
 
-Research and implementation direction, 11 November 2026. The aim is a simple, convincing player on a wooden table in the selected Illovo Beach Balcony setting, while preserving native interaction and the audio simulation.
+Cozy Vinyl uses [Appartement by SrMonteiro](https://sketchfab.com/3d-models/appartement-6a7a5fe208344b2e8123a88923dbd5b3), a furnished apartment licensed CC BY 4.0. Geometry, attribution and placement details are in [the room asset notes](../assets/room/README.md).
 
-## Diagnosis
+## Perspective
 
-The first apartment scene combined three incompatible lighting models: a display-ready JPEG background, approximate table lighting, and the turntable's original studio softboxes. The handmade lamp, striped procedural wood, flat room surfaces and decorative record sleeves amplified that mismatch. Adding higher-resolution meshes alone would not solve it.
+The earlier photographic balcony was an infinite panorama, while the table and player were finite geometry. Orbiting revealed the lack of parallax in the photographed floor and railings. A higher resolution panorama would not fix that mismatch.
 
-## References and useful techniques
+The apartment now supplies real walls, floor, furniture and table geometry, all rendered by the same perspective camera as the player. The default vertical field of view is 50 degrees. This is a practical desktop framing choice, not a claim to reproduce the full human visual field. Optical zoom changes field of view; the stylus inspection camera is separate. Orbit limits keep the camera on the table viewing area.
 
-- [Khronos glTF PBR guide](https://www.khronos.org/gltf/pbr): use base color, metallic/roughness, normal and occlusion textures consistently. Base color is color data; normal and packed material channels are linear data. The existing scanned table already has these maps, so importing them is more useful than adding polygons.
-- [Diffuse irradiance](https://learnopengl.com/PBR/IBL/Diffuse-irradiance): integrate the environment over the surface hemisphere for indirect diffuse light rather than adding a constant ambient tint.
-- [Specular IBL](https://learnopengl.com/PBR/IBL/Specular-IBL): use GGX-prefiltered environment levels and a split-sum BRDF lookup table for roughness-dependent reflections. Ordinary JPEG mipmaps are not a replacement for this filtering.
-- [Khronos sample renderer's actual IBL implementation](https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Renderer/main/source/Renderer/shaders/ibl.glsl): diffuse environment, roughness-dependent specular environment and BRDF lookup share one environment rotation/intensity. This was read as prior art for the runtime organization.
-- [Selected HDR source](https://polyhaven.com/a/illovo_beach_balcony): morning sun with strong contrast. Preserve that character, and align the shadow-casting light with the sun in this panorama.
+## Materials and lighting
 
-## Decision
+The GLB uses `KHR_materials_unlit`: its textures already contain the artist's lighting and shadows. The room shader samples them as sRGB and preserves their appearance without adding another lighting calculation or exposure curve. See [Khronos's unlit extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_unlit).
 
-Use the selected photographic surroundings, the scanned wooden table and the original interactive turntable. Remove the generated apartment walls, lamp, floor and extra record sleeves. The panorama supplies the architectural context; nearby table and player remain actual geometry.
+The interactive player remains dynamically shaded. An offline emission-only capture of the apartment at the player supplies its diffuse light and reflections. The probe is converted through the inverse of our ACES approximation so reflection colors can match the visible room after tone mapping. This does not recover missing HDR energy from the original LDR textures.
 
-Use the floating-point HDR source for both the background and lighting. Bake diffuse spherical harmonics, GGX specular levels and the BRDF lookup offline. Extract the concentrated sun contribution into a directional light so it can cast shadows; remove that contribution from indirect lighting to avoid counting it twice. Apply one exposure and tone-mapping curve across the backdrop, table and player. Preserve real table detail with its normal and packed AO/roughness/metallic textures. Contact occlusion should attenuate indirect light modestly rather than painting a black rectangle under the player.
+The Rust environment baker computes SH9 diffuse lighting, GGX roughness levels and a split-sum BRDF lookup. Room probes disable sun extraction: a bright patch in an already-lit texture should not become an additional sun. A modest local shadow from the player grounds it on the table without darkening the entire baked room again.
 
-This keeps runtime work to ordinary rasterization, a shadow map, and precomputed texture lookups. Ray tracing, screen-space reflections, depth-of-field blur, bloom and additional decorative assets are not needed to address the observed problems. They would add cost and tuning before the basic lighting is consistent.
+References: [diffuse irradiance](https://learnopengl.com/PBR/IBL/Diffuse-irradiance), [specular IBL](https://learnopengl.com/PBR/IBL/Specular-IBL), and [Khronos's renderer implementation](https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Renderer/main/source/Renderer/shaders/ibl.glsl).
 
 ## Limits
 
-A panorama has angular detail but no translational parallax. The renderer therefore supports close orbiting around the player rather than walking through the photographed balcony. The environment is not a reconstruction of the photographed building. The table is a separately scanned object placed into that view. Shared HDR illumination improves consistency, but it is not full global illumination or an offline path-traced render.
+Lighting in the room is baked and cannot respond fully to moving furniture or changing time of day. The player uses a single local lighting probe and an approximate contact shadow, not real-time global illumination. The room retains its original scale, with the player placed on the dining table. The physical audio model is unchanged.

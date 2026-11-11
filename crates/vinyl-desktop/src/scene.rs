@@ -1,5 +1,5 @@
-//! Native OpenGL port of the original studio-lit turntable. SI units, +z up.
-use crate::{apartment::Apartment, mesh::Meshes};
+//! Interactive turntable inside the furnished room. SI units, +z up.
+use crate::{environment::Environment, mesh::Meshes, room::Room};
 use eframe::{
     egui,
     glow::{self, HasContext},
@@ -156,7 +156,8 @@ impl Program {
 }
 
 pub struct Scene {
-    apartment: Apartment,
+    environment: Environment,
+    room: Room,
     meshes: Meshes,
     standard: Program,
     record: Program,
@@ -171,7 +172,7 @@ pub struct Scene {
     info: Option<RecordUniforms>,
 }
 impl Scene {
-    pub fn new(gl: &glow::Context) -> Result<Self, String> {
+    pub fn new(gl: &glow::Context, root: &std::path::Path) -> Result<Self, String> {
         unsafe {
             let standard = Program::new(
                 gl,
@@ -197,7 +198,8 @@ impl Scene {
                 include_str!("shaders/depth_fs.glsl"),
             )?;
             let meshes = Meshes::new(gl)?;
-            let apartment = Apartment::new(gl)?;
+            let environment = Environment::new(gl)?;
+            let room = Room::new(gl, &root.join("assets/room"))?;
             let lut = gl.create_texture()?;
             let modulation = gl.create_texture()?;
             let label = gl.create_texture()?;
@@ -242,7 +244,7 @@ impl Scene {
             }
             gl.bind_framebuffer(glow::FRAMEBUFFER, previous);
             let target = Vec3::new(0.04, 0.0, -0.07);
-            let sun = apartment.sun_direction();
+            let sun = environment.sun_direction();
             let up = if sun.dot(Vec3::Z).abs() > 0.98 {
                 Vec3::Y
             } else {
@@ -251,7 +253,8 @@ impl Scene {
             let light_vp = Mat4::orthographic_rh_gl(-0.9, 0.9, -0.8, 0.8, 0.1, 5.0)
                 * Mat4::look_at_rh(target + sun * 2.5, target, up);
             let mut scene = Self {
-                apartment,
+                environment,
+                room,
                 meshes,
                 standard,
                 record,
@@ -535,7 +538,6 @@ impl Scene {
             gl.enable(glow::POLYGON_OFFSET_FILL);
             gl.polygon_offset(2.0, 4.0);
             matrix(gl, &self.depth, "uM", Mat4::IDENTITY);
-            self.apartment.shadow(gl);
             for item in &items {
                 matrix(gl, &self.depth, "uM", item.model);
                 self.meshes.draw(gl, item.mesh);
@@ -550,11 +552,11 @@ impl Scene {
             // Restrict the clear to this widget, since egui also draws surrounding controls.
             gl.enable(glow::SCISSOR_TEST);
             gl.scissor(viewport[0], viewport[1], viewport[2], viewport[3]);
-            gl.clear_color(0.004, 0.004, 0.005, 1.0);
+            gl.clear_color(0.65, 0.72, 0.78, 1.0);
             gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
             gl.active_texture(glow::TEXTURE3);
             gl.bind_texture(glow::TEXTURE_2D, Some(self.shadow));
-            self.apartment.draw(gl, vp, eye, self.light_vp, self.shadow);
+            self.room.draw(gl, vp, self.light_vp, self.shadow);
             let p = &self.standard;
             gl.use_program(Some(p.handle));
             self.common(gl, p, &eye, &vp, on);
@@ -611,7 +613,7 @@ impl Scene {
             matrix(gl, p, "uLVP", self.light_vp);
             gl.uniform_3_f32_slice(p.u("uEye"), &eye.to_array());
             gl.uniform_1_i32(p.u("uShadow"), 3);
-            self.apartment.bind_lighting(gl, p.handle);
+            self.environment.bind_lighting(gl, p.handle);
             gl.uniform_4_f32(
                 p.u("uLamp"),
                 -0.158 + 0.7026 * 0.024,
@@ -623,7 +625,8 @@ impl Scene {
     }
     pub fn destroy(&self, gl: &glow::Context) {
         unsafe {
-            self.apartment.destroy(gl);
+            self.environment.destroy(gl);
+            self.room.destroy(gl);
             self.meshes.destroy(gl);
             for program in [&self.standard, &self.record, &self.depth] {
                 gl.delete_program(program.handle);

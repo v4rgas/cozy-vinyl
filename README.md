@@ -2,6 +2,8 @@
 
 A native Rust record player that reads simulated grooves, with an interactive 3D turntable and a cozy listening space.
 
+![Cozy Vinyl in the furnished apartment](docs/cozy-vinyl.png)
+
 ## Run
 
 ```sh
@@ -25,7 +27,7 @@ See [native usage](docs/native.md), [rendering notes](docs/photorealistic-render
 - `assets`: prepared grooves, fonts and scene resources
 - `records`: source recordings
 
-Spotify audio routing is research only. The selected full apartment scene is not integrated yet; the current renderer uses the balcony environment.
+The player sits at the dining table inside [Appartement by SrMonteiro](assets/room/README.md), a complete furnished 3D room. Spotify audio routing is research only.
 
 ## Credits
 

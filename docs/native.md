@@ -28,13 +28,13 @@ vinyl-desktop --assets-root /path/to/vinyl
 
 The record shelf keeps recording attributions and source links. The two Commons CC0 albums are fetched track by track and cached under `cache/`. Subsequent playback of downloaded tracks works offline. The next track is prepared in the background, with a cueing gap at transitions. The app does not cache an entire album until its tracks have been requested. Network failures are displayed in the status area.
 
-## Balcony setting
+## Apartment setting
 
-The player sits on a scanned wooden table against Greg Zaal's [Illovo Beach Balcony](https://polyhaven.com/a/illovo_beach_balcony). The table is Ulan Cabanilla's [Small Wooden Table 01](https://polyhaven.com/a/small_wooden_table_01). Both are bundled CC0 assets and work offline; sources and conversion instructions are in [the asset notes](../assets/apartment/README.md).
+The player sits on the dining table in [Appartement by SrMonteiro](../assets/room/README.md), licensed CC BY 4.0. The room and its furniture are actual 3D geometry with baked lighting. The room uses its original scale, and the player rests on the clear tabletop. Geometry and textures are bundled for offline use.
 
-The table and player have real geometry. The surrounding balcony is a photographic HDR panorama, so it rotates with the camera but has no translational parallax. The panorama also supplies the light and reflections. The scene uses the table's normal and packed material maps, precomputed environment lighting, and one shared exposure/tone mapper. Extra record sleeves and generated room decorations have been removed. See [rendering research](photorealistic-rendering.md) for the approach and its limits.
+The room retains its baked colors. The turntable uses an environment probe captured inside that room, with precomputed diffuse light and roughness-dependent reflections. A local contact shadow grounds the player on the table. See [rendering notes](photorealistic-rendering.md).
 
-Scroll changes the lens field of view, keeping the player and panorama at consistent magnification without shifting toward the arm. **Z** toggles a separate stylus inspection camera and resets lens zoom.
+The opening vertical field of view is 50 degrees. Scroll changes the lens field of view without shifting the aim toward the arm. **Z** toggles a separate stylus inspection camera and resets lens zoom. Orbiting is limited to the table viewing area to keep the camera within the room.
 
 ## Offline audio export
 
@@ -59,3 +59,5 @@ No new automated tests were added in this rewrite, as requested. Compilation and
 On Linux, the workspace compiled successfully with `cargo build --offline -p vinyl-desktop`, and formatting/diff checks passed. The native window was opened in Xvfb, the precompiled Rhapsody disc loaded, and clicking Power on started the device callback, platter and cue automation without logged errors. Screenshots were inspected against the original scene.
 
 Manual WAV renders exercised actual asset deserialization, lossless FLAC reconstruction, pressing and physics: Demo EP for 8 seconds (RMS 0.049156, peak 0.457263) and Rhapsody for 3 seconds (RMS 0.017816, peak 0.250081). Both had zero clipped samples and zero solver resets. These are smoke checks, not an acoustic equivalence assessment. Commons network playback and other operating systems were not exercised.
+
+The furnished apartment was also checked in the native window: default view, zoom in/out, motor start and stylus inspection rendered without logged errors. The room footprint and placement were checked against the source mesh.

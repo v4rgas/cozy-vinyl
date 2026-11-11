@@ -1,8 +1,9 @@
-mod apartment;
 mod audio;
 mod commons;
+mod environment;
 mod mesh;
 mod records;
+mod room;
 mod scene;
 
 use audio::{AudioController, Command, Snapshot};
@@ -87,7 +88,7 @@ impl VinylApp {
         let (tx, rx) = mpsc::channel();
         let (album_tx, album_rx) = mpsc::channel();
         let mut app = Self {
-            scene: Arc::new(Mutex::new(Scene::new(gl)?)),
+            scene: Arc::new(Mutex::new(Scene::new(gl, &root)?)),
             view: SceneState::default(),
             audio: None,
             snapshot: None,
@@ -532,8 +533,8 @@ impl VinylApp {
                 }
                 Some(Drag::Orbit) => {
                     let delta = ctx.input(|i| i.pointer.delta());
-                    self.view.azimuth -= delta.x * 0.006;
-                    self.view.elevation = (self.view.elevation + delta.y * 0.006).clamp(0.02, 1.55);
+                    self.view.azimuth = (self.view.azimuth - delta.x * 0.006).clamp(-1.15, 1.15);
+                    self.view.elevation = (self.view.elevation + delta.y * 0.006).clamp(0.15, 1.1);
                     self.drag = Some(Drag::Orbit);
                 }
                 None => {}

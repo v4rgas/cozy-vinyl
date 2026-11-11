@@ -15,10 +15,10 @@
     "row_order": "top (v=0,+Z) to bottom (v=1,-Z)",
     "up": "+Z"
   },
-  "exposure": 1.6719132305870608,
-  "exposure_rule": "0.18 / solid-angle-weighted geometric mean HDR luminance; apply once to background and shaded surfaces before shared tone mapping",
-  "log_average_luminance": 0.10766108952723366,
-  "mean_luminance": 0.9965940350339757,
+  "exposure": 1.0,
+  "exposure_rule": "Fixed unity: source LDR appearance was inverse tone mapped for the shared runtime ACES display transform.",
+  "log_average_luminance": 0.5354592099630274,
+  "mean_luminance": 0.5629993215619742,
   "references": [
     "https://learnopengl.com/PBR/IBL/Diffuse-irradiance",
     "https://learnopengl.com/PBR/IBL/Specular-IBL",
@@ -26,56 +26,56 @@
   ],
   "sh9": [
     [
-      0.8302097099931626,
-      0.9396025795933103,
-      1.0970720044629259
+      2.25131093302694,
+      1.9417321533668017,
+      1.7787408680013927
     ],
     [
-      0.17390635769158702,
-      0.2597071442454827,
-      0.365992281806198
+      -0.1747897236427314,
+      -0.13135603335970003,
+      -0.11512779675643667
     ],
     [
-      0.05132860189464792,
-      0.13012996233038507,
-      0.28094831050810976
+      -0.20550453139937175,
+      -0.10837532280610197,
+      -0.062134002767825276
     ],
     [
-      -0.02358492759361511,
-      -0.0034280713773532736,
-      0.004568501631306486
+      0.09204703811560207,
+      0.05087572754681411,
+      0.022130713274601255
     ],
     [
-      0.1487037555697241,
-      0.14708649617269914,
-      0.13755816955630332
+      0.0022290496115003207,
+      0.007598299016227763,
+      0.01017948588257518
     ],
     [
-      0.048533892996836095,
-      0.0687757403631018,
-      0.10538990125063621
+      0.026647882164166106,
+      0.012581418882526922,
+      0.00803652752326083
     ],
     [
-      -0.0972570425603707,
-      -0.10065331865841311,
-      -0.09592251883221048
+      0.012278218598370994,
+      -0.0033280643997879718,
+      -0.012537981350095944
     ],
     [
-      0.0715720275315887,
-      0.06557779060107902,
-      0.046498668026535406
+      0.0023370063469985236,
+      -0.0016813638478449604,
+      -0.0036823948237928927
     ],
     [
-      0.03610501421058591,
-      0.03241790231494654,
-      0.026695284224981478
+      0.045081949345727415,
+      0.047983309635144716,
+      0.04782749282008031
     ]
   ],
   "sh9_normalization": "normalized real basis [1,y,z,x,xy,yz,3z^2-1,xz,x^2-y^2]; coefficients include Lambert convolution / pi: band factors 1,2/3,1/4; evaluate sum(sh9[i]*Y_i(normal)), then clamp negative truncation ringing to zero",
   "source": {
     "filename": "balcony.hdr",
-    "height": 2048,
-    "width": 4096
+    "height": 512,
+    "width": 1024
   },
   "specular": {
     "components": 3,
@@ -83,7 +83,7 @@
     "format": "f32le",
     "height": 256,
     "levels": 10,
-    "normalization": "sum(Li * NdotL) / sum(NdotL), GGX importance samples, V=N; no exposure; sun excess removed; source mips selected from GGX pdf and equirectangular texel solid angle",
+    "normalization": "sum(Li * NdotL) / sum(NdotL), GGX importance samples, V=N; no exposure; sun excess removed only when extraction is enabled; source mips selected from GGX pdf and equirectangular texel solid angle",
     "offsets": [
       {
         "height": 256,
@@ -151,28 +151,38 @@
   },
   "sun": {
     "direction": [
-      0.7302370992224947,
-      0.5337825994247567,
-      0.4264151914161431
+      -0.5,
+      -0.5,
+      0.7071067811865476
     ],
-    "extraction": "upper hemisphere peak; >max(0.005*peak,4*local-sky-luminance), within 3 degrees; positive excess above median 2–5 degree annulus removed",
-    "local_sky_radiance": [
-      4.78125,
-      5.03125,
-      4.90625
-    ],
-    "peak_luminance": 173323.0592,
+    "extraction": "disabled with --no-sun; all source radiance retained in IBL",
     "radiance": [
-      9.843036759396538,
-      9.180156876385293,
-      7.986541814930005
+      0.0,
+      0.0,
+      0.0
     ],
-    "radiance_units": "integrated scene-linear RGB radiance over solid angle; directional irradiance perpendicular to light",
-    "removed_pixels": 60,
-    "rms_angle_radians": 0.0032132937636162105,
-    "solid_angle": 0.00012772226968453366,
-    "threshold_luminance": 866.615296,
-    "upper_hemisphere_log_average": 0.16069590409116521
+    "removed_pixels": 0,
+    "solid_angle": 0.0
   },
-  "version": 1
+  "version": 1,
+  "room_probe": {
+    "source": "assets/room-source/appartement.glb",
+    "position_native": [
+      0,
+      0,
+      0.15
+    ],
+    "material_capture": "Original baked KHR_materials_unlit colors as emission; no added lights.",
+    "radiometry": "Display-matched LDR radiance proxy, not measured HDR illumination; clipped highlights cannot be recovered.",
+    "inverse_tone_mapping": "sRGB-encode source linear RGB, raise to 2.2, inverse ACES fitted curve; target capped .999.",
+    "samples": 16,
+    "environment_rotation": 0,
+    "sun": "No extracted directional sun; all captured room radiance remains in diffuse and specular IBL.",
+    "exterior_fill_display_srgb": [
+      0.65,
+      0.72,
+      0.78
+    ],
+    "exterior_fill": "Neutral artist-selected background for geometry openings; matches native clear color. Source is sRGB-decoded before the shared inverse tone mapping."
+  }
 }

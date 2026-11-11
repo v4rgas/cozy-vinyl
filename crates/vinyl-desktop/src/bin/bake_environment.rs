@@ -1,7 +1,8 @@
 //! Reproducible, offline HDR image based lighting bake.
 //!
 //! Run from the repository root:
-//!   cargo run --release -p vinyl-desktop --bin bake_environment --offline
+//!   cargo run --release --offline -p vinyl-desktop --bin bake_environment -- assets/room --no-sun
+//! Use tools/bake-room-lighting.py to capture the room and apply its fixed exposure.
 //!
 //! The SH stores irradiance / pi, with normalized real SH basis ordered
 //! [1,y,z,x,xy,yz,3z²-1,xz,x²-y²]. Lambert convolution multipliers are
@@ -363,10 +364,13 @@ fn write_floats(path: &Path, values: &[f32]) -> Result<(), Box<dyn Error>> {
 }
 fn main() -> Result<(), Box<dyn Error>> {
     let started = Instant::now();
-    let directory = std::env::args_os()
-        .nth(1)
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    let no_sun = arguments.iter().any(|argument| argument == "--no-sun");
+    let directory = arguments
+        .iter()
+        .find(|argument| *argument != "--no-sun")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("assets/apartment"));
+        .unwrap_or_else(|| PathBuf::from("assets/room"));
     let source = directory.join("balcony.hdr");
     let image = ImageReader::open(&source)?.decode()?.into_rgb32f();
     let (width, height) = image.dimensions();
@@ -397,7 +401,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let log_average = (logs / (4.0 * PI)).exp();
     let exposure = 0.18 / log_average;
-    let sun = extract_sun(&mut base);
+    // Baked LDR rooms have no measured sun radiometry. Keep bright windows in
+    // the environment rather than mistaking them for a separate directional sun.
+    let sun = if no_sun {
+        json!({"direction":[-0.5,-0.5,std::f64::consts::FRAC_1_SQRT_2],
+            "radiance":[0.0,0.0,0.0],"solid_angle":0.0,"removed_pixels":0,
+            "extraction":"disabled with --no-sun; all source radiance retained in IBL"})
+    } else {
+        extract_sun(&mut base)
+    };
     let sh = project_sh(&base);
     if !exposure.is_finite() || sh.iter().flatten().any(|c| !c.is_finite()) {
         return Err("non-finite environment exposure or spherical harmonics".into());
@@ -420,7 +432,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     write_floats(&directory.join("specular.bin"), &packed)?;
     let lut = brdf_lut();
     write_floats(&directory.join("brdf.bin"), &lut)?;
-    let metadata = json!({"version":1,"source":{"filename":"balcony.hdr","width":width,"height":height},"exposure":exposure,"log_average_luminance":log_average,"mean_luminance":lum_sum/(4.0*PI),"exposure_rule":"0.18 / solid-angle-weighted geometric mean HDR luminance; apply once to background and shaded surfaces before shared tone mapping", "coordinate_system":{"mapping":"dir=(cos(phi)*sin(theta),sin(phi)*sin(theta),cos(theta)); phi=TAU*(u-0.5), theta=PI*v","up":"+Z","row_order":"top (v=0,+Z) to bottom (v=1,-Z)","rotation":"none"},"sh9":sh,"sh9_normalization":"normalized real basis [1,y,z,x,xy,yz,3z^2-1,xz,x^2-y^2]; coefficients include Lambert convolution / pi: band factors 1,2/3,1/4; evaluate sum(sh9[i]*Y_i(normal)), then clamp negative truncation ringing to zero","sun":sun,"specular":{"filename":"specular.bin","width":PREFILTER_WIDTH,"height":PREFILTER_HEIGHT,"levels":PREFILTER_LEVELS,"components":3,"format":"f32le","samples":ENV_SAMPLES,"offsets":mip_metadata,"normalization":"sum(Li * NdotL) / sum(NdotL), GGX importance samples, V=N; no exposure; sun excess removed; source mips selected from GGX pdf and equirectangular texel solid angle"},"brdf":{"filename":"brdf.bin","width":LUT_SIZE,"height":LUT_SIZE,"components":2,"format":"f32le","samples":LUT_SAMPLES,"mapping":"texel centers: u=NdotV, v=perceptual roughness; rows increase roughness","normalization":"RG=mean((1-Fc)*Gvis, Fc*Gvis); alpha=roughness^2; Schlick-GGX k=roughness^2/2; Fc=(1-VdotH)^5; use F0*R+G"},"references":["https://learnopengl.com/PBR/IBL/Diffuse-irradiance","https://learnopengl.com/PBR/IBL/Specular-IBL","https://github.com/KhronosGroup/glTF-Sample-Renderer"]});
+    let metadata = json!({"version":1,"source":{"filename":"balcony.hdr","width":width,"height":height},"exposure":exposure,"log_average_luminance":log_average,"mean_luminance":lum_sum/(4.0*PI),"exposure_rule":"0.18 / solid-angle-weighted geometric mean HDR luminance; apply once to background and shaded surfaces before shared tone mapping", "coordinate_system":{"mapping":"dir=(cos(phi)*sin(theta),sin(phi)*sin(theta),cos(theta)); phi=TAU*(u-0.5), theta=PI*v","up":"+Z","row_order":"top (v=0,+Z) to bottom (v=1,-Z)","rotation":"none"},"sh9":sh,"sh9_normalization":"normalized real basis [1,y,z,x,xy,yz,3z^2-1,xz,x^2-y^2]; coefficients include Lambert convolution / pi: band factors 1,2/3,1/4; evaluate sum(sh9[i]*Y_i(normal)), then clamp negative truncation ringing to zero","sun":sun,"specular":{"filename":"specular.bin","width":PREFILTER_WIDTH,"height":PREFILTER_HEIGHT,"levels":PREFILTER_LEVELS,"components":3,"format":"f32le","samples":ENV_SAMPLES,"offsets":mip_metadata,"normalization":"sum(Li * NdotL) / sum(NdotL), GGX importance samples, V=N; no exposure; sun excess removed only when extraction is enabled; source mips selected from GGX pdf and equirectangular texel solid angle"},"brdf":{"filename":"brdf.bin","width":LUT_SIZE,"height":LUT_SIZE,"components":2,"format":"f32le","samples":LUT_SAMPLES,"mapping":"texel centers: u=NdotV, v=perceptual roughness; rows increase roughness","normalization":"RG=mean((1-Fc)*Gvis, Fc*Gvis); alpha=roughness^2; Schlick-GGX k=roughness^2/2; Fc=(1-VdotH)^5; use F0*R+G"},"references":["https://learnopengl.com/PBR/IBL/Diffuse-irradiance","https://learnopengl.com/PBR/IBL/Specular-IBL","https://github.com/KhronosGroup/glTF-Sample-Renderer"]});
     fs::write(
         directory.join("lighting.json"),
         serde_json::to_vec_pretty(&metadata)?,
