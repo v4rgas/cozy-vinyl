@@ -1,0 +1,14 @@
+node_modules
+dist
+tmp
+.DS_Store
+assets/.building
+*.tmp
+.env*
+
+/target/
+/cache/
+
+/.agents/
+/.codex/
+/.aws/

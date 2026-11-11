@@ -1,0 +1,4 @@
+*.vis binary
+*.bin binary
+*.glb binary
+*.hdr binary
